@@ -1,238 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Gravity Field — Scientific Visualizer</title>
-
-<style>
-  body {
-    margin: 0;
-    height: 100vh;
-    background: radial-gradient(circle at center, #020617, #000);
-    font-family: system-ui;
-    color: #e5e7eb;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .game {
-    display: flex;
-    gap: 28px;
-  }
-
-  .hud {
-    width: 320px;
-    background: rgba(15,23,42,0.75);
-    backdrop-filter: blur(14px);
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 0 40px rgba(56,189,248,0.12);
-  }
-
-  .hud h2 {
-    margin-top: 0;
-    text-align: center;
-    letter-spacing: 0.05em;
-  }
-
-  .section {
-    margin-top: 14px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(148,163,184,0.15);
-  }
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    margin: 4px 0;
-  }
-
-  .label {
-    color: #94a3b8;
-  }
-
-  .value {
-    color: #38bdf8;
-    font-variant-numeric: tabular-nums;
-  }
-
-  input[type="range"] {
-    width: 100%;
-    accent-color: #38bdf8;
-    margin-top: 6px;
-  }
-
-  .scene {
-    width: 420px;
-    height: 420px;
-    border-radius: 50%;
-    position: relative;
-    background: radial-gradient(circle, #020617 45%, #000);
-    overflow: hidden;
-    box-shadow: inset 0 0 140px rgba(56,189,248,0.1);
-  }
-
-  .core {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    background: #38bdf8;
-    border-radius: 50%;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 35px #38bdf8;
-  }
-
-  .orb {
-    position: absolute;
-    width: 26px;
-    height: 26px;
-    background: radial-gradient(circle, #e5e7eb, #38bdf8);
-    border-radius: 50%;
-    box-shadow: 0 0 30px rgba(56,189,248,0.8);
-  }
-
-  .trail {
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    background: rgba(56,189,248,0.3);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Gravity Field — Scientific Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
+  <div class="game">
 
-<div class="game">
+    <!-- HUD -->
+    <div class="hud">
+      <h2>GRAVITY FIELD</h2>
 
-  <!-- HUD -->
-  <div class="hud">
-    <h2>GRAVITY FIELD</h2>
+      <div class="row">
+        <span class="label">Gravity (g)</span>
+        <span class="value"><span id="gval">9.8</span> m·s⁻²</span>
+      </div>
+      <input id="gravity" type="range" min="1" max="25" step="0.1" value="9.8">
 
-    <div class="row">
-      <span class="label">Gravity (g)</span>
-      <span class="value"><span id="gval">9.8</span> m·s⁻²</span>
+      <div class="row">
+        <span class="label">Orbit Mode</span>
+        <select id="mode">
+          <option value="circular">Circular</option>
+          <option value="elliptical">Elliptical</option>
+          <option value="precess">Precessing</option>
+        </select>
+      </div>
+
+      <div class="section">
+        <strong>Kinematics</strong>
+        <div class="row"><span class="label">r</span><span class="value" id="r"></span></div>
+        <div class="row"><span class="label">ω</span><span class="value" id="w"></span></div>
+        <div class="row"><span class="label">v</span><span class="value" id="v"></span></div>
+        <div class="row"><span class="label">aₙ</span><span class="value" id="ac"></span></div>
+      </div>
+
+      <div class="section">
+        <strong>Energy (norm.)</strong>
+        <div class="row"><span class="label">K</span><span class="value" id="K"></span></div>
+        <div class="row"><span class="label">U</span><span class="value" id="U"></span></div>
+        <div class="row"><span class="label">E</span><span class="value" id="E"></span></div>
+      </div>
+
+      <p class="note">
+        Analytic motion with derived physical quantities.<br>
+        Stable by construction.
+      </p>
     </div>
 
-    <input id="gravity" type="range" min="1" max="25" step="0.1" value="9.8">
+    <!-- SCENE -->
+    <div class="scene" id="scene">
+      <div class="core"></div>
+      <div class="orb" id="orb"></div>
 
-    <div class="section">
-      <strong>Orbital Mechanics</strong>
-      <div class="row"><span class="label">Radius (r)</span><span class="value" id="r"></span></div>
-      <div class="row"><span class="label">Angular vel. (ω)</span><span class="value" id="w"></span></div>
-      <div class="row"><span class="label">Tangential vel. (v)</span><span class="value" id="v"></span></div>
-      <div class="row"><span class="label">Centripetal acc.</span><span class="value" id="ac"></span></div>
-      <div class="row"><span class="label">Orbital period (T)</span><span class="value" id="T"></span></div>
+      <!-- Vectors -->
+      <div class="vector vel" id="vVec"></div>
+      <div class="vector acc" id="aVec"></div>
     </div>
 
-    <div class="section">
-      <strong>Energy (normalized)</strong>
-      <div class="row"><span class="label">Kinetic (K)</span><span class="value" id="K"></span></div>
-      <div class="row"><span class="label">Potential (U)</span><span class="value" id="U"></span></div>
-      <div class="row"><span class="label">Total (E)</span><span class="value" id="E"></span></div>
-    </div>
-
-    <div class="section">
-      <strong>Geometry</strong>
-      <div class="row"><span class="label">Eccentricity*</span><span class="value" id="e"></span></div>
-      <div class="row"><span class="label">Curvature κ</span><span class="value" id="k"></span></div>
-    </div>
-
-    <p style="font-size:0.75rem;color:#64748b;margin-top:8px">
-      *Visual eccentricity due to vertical compression<br>
-      All values computed live per frame
-    </p>
   </div>
 
-  <!-- SCENE -->
-  <div class="scene" id="scene">
-    <div class="core"></div>
-    <div class="orb" id="orb"></div>
-  </div>
-
-</div>
-
-<script>
-  const orb = document.getElementById("orb");
-  const slider = document.getElementById("gravity");
-  const scene = document.getElementById("scene");
-
-  const gval = document.getElementById("gval");
-  const rEl = document.getElementById("r");
-  const wEl = document.getElementById("w");
-  const vEl = document.getElementById("v");
-  const acEl = document.getElementById("ac");
-  const TEl = document.getElementById("T");
-  const KEl = document.getElementById("K");
-  const UEl = document.getElementById("U");
-  const EEl = document.getElementById("E");
-  const eEl = document.getElementById("e");
-  const kEl = document.getElementById("k");
-
-  let angle = 0;
-
-  function loop() {
-    const g = parseFloat(slider.value);
-    gval.textContent = g.toFixed(1);
-
-    // Derived system parameters
-    const r = 150 - g * 4;
-    const omega = 0.01 + g * 0.002;
-    const squash = 1 + g * 0.02;
-
-    angle += omega;
-
-    const x = Math.cos(angle) * r;
-    const y = Math.sin(angle) * r * 0.6;
-
-    orb.style.left = 210 + x + "px";
-    orb.style.top  = 210 + y + "px";
-    orb.style.transform = `scaleY(${1 / squash}) scaleX(${squash})`;
-
-    // --- Physics calculations ---
-    const v = omega * r;
-    const ac = (v * v) / r;
-    const T = (2 * Math.PI) / omega;
-
-    const K = 0.5 * v * v;
-    const U = -g * r;
-    const E = K + U;
-
-    const ecc = 1 - 0.6;
-    const curvature = 1 / r;
-
-    // --- Display ---
-    rEl.textContent  = r.toFixed(1) + " px";
-    wEl.textContent  = omega.toFixed(3) + " rad·s⁻¹";
-    vEl.textContent  = v.toFixed(2);
-    acEl.textContent = ac.toFixed(2);
-    TEl.textContent  = T.toFixed(1) + " s";
-
-    KEl.textContent = K.toFixed(1);
-    UEl.textContent = U.toFixed(1);
-    EEl.textContent = E.toFixed(1);
-
-    eEl.textContent = ecc.toFixed(2);
-    kEl.textContent = curvature.toExponential(2);
-
-    // Trail
-    const t = document.createElement("div");
-    t.className = "trail";
-    t.style.left = 210 + x + "px";
-    t.style.top  = 210 + y + "px";
-    scene.appendChild(t);
-    setTimeout(() => t.remove(), 600);
-
-    requestAnimationFrame(loop);
-  }
-
-  loop();
-</script>
-
+  <script src="app.js"></script>
 </body>
 </html>
